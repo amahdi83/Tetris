@@ -39,7 +39,7 @@ This project wouldn't have been possible without the amazing work of the Tetris 
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE), which means you're free to use, modify, and distribute the code however you like.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
 
 ---
 
