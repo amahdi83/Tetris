@@ -126,6 +126,7 @@ class Tetris:
         self.game_over = False
 
         self.rotate = False
+        self.mobile = True
 
         self.score = 0
         self.level = 1
@@ -161,12 +162,14 @@ class Tetris:
         self.matrix = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
         self.board = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
         
+        
     
     def reset(self):
         self.game_over = False
         self.hold = False
         self.dx, self.dy = 3, 0
         self.rotation = 0
+        self.mobile = 0
         self.mino = randint(1, 7)
         self.next_mino = randint(1, 7)
         self.hold_mino = -1
@@ -194,9 +197,12 @@ class Tetris:
             
         else:
             pass
+        
+        self.check_collision()
 
 
     def rotate_clockwise(self, shape):
+        self.check_collision()
         self.rotation = (self.rotation + 1) % 4
         
         return [[shape[y][x]
@@ -204,6 +210,7 @@ class Tetris:
                 for x in range(len(shape[0]) - 1, -1, -1)]
 
     def rotate_counterclockwise(self, shape):
+        self.check_collision()
         self.rotation = self.rotation - 1
         if self.rotation < 0: 
             self.rotation = 3
@@ -423,6 +430,28 @@ class Tetris:
                     return False
     
         return True
+    
+    
+    def game_update(self):
+        self.draw_mino(self.dx, self.dy, self.mino_block)
+        self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
+        
+        self.build_board()
+        
+        self.check_collision()
+        
+    
+    def check_collision(self):
+        off_x, off_y = self.dx, self.dy
+        for cy, row in enumerate(self.mino_block):
+            for cx, cell in enumerate(row):
+                try:
+                    if cell and self.board[cy + off_y][cx + off_x]:
+                        self.mobile = False
+                except IndexError:
+                    self.mobile = False
+        self.mobile = True
+        
 
 
 
@@ -479,11 +508,7 @@ class Tetris:
                             else:
                                 pygame.time.set_timer(pygame.USEREVENT, self.framerate * 10)
         
-                        # Draw a mino
-                        self.draw_mino(self.dx, self.dy, self.mino_block)
-                        self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
-                        
-                        self.build_board()
+                        self.game_update()
         
                         # Erase a mino
                         if not self.game_over:
@@ -499,10 +524,8 @@ class Tetris:
                                 self.hard_drop = False
                                 self.bottom_count = 0
                                 self.score += 10 * self.level
-                                self.draw_mino(self.dx, self.dy, self.mino_block)
-                                self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
                                 
-                                self.build_board()
+                                self.game_update()
                                 
                                 if self.is_stackable(self.next_mino_block):
                                     self.mino = self.next_mino
@@ -571,10 +594,8 @@ class Tetris:
                                 self.dy += 1
                             self.hard_drop = True
                             pygame.time.set_timer(pygame.USEREVENT, 1)
-                            self.draw_mino(self.dx, self.dy, self.mino_block)
-                            self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
 
-                            self.build_board()
+                            self.game_update()
                             
                         # Hold
                         elif event.key == K_LSHIFT or event.key == K_c:
@@ -598,10 +619,7 @@ class Tetris:
                                 self.rotation = 0
                                 self.hold = True
                                 
-                            self.draw_mino(self.dx, self.dy, self.mino_block)
-                            self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
- 
-                            self.build_board()
+                            self.game_update()
                             
                         # Turn right
                         elif event.key == K_UP or event.key == K_x:
@@ -640,10 +658,7 @@ class Tetris:
                                 ui_variables.move_sound.play()
                                 self.dx -= 3
                             
-                            self.draw_mino(self.dx, self.dy, self.mino_block)
-                            self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
-
-                            self.build_board()
+                            self.game_update()
                             
                         # Turn left
                         elif event.key == K_z or event.key == K_LCTRL:
@@ -680,29 +695,22 @@ class Tetris:
                             elif self.is_turnable_l(self.dx - 3, self.dy, self.mino_block):
                                 ui_variables.move_sound.play()
                                 self.dx -= 3
-                            
-                            self.draw_mino(self.dx, self.dy, self.mino_block)
-                            self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
-                            
-                            self.build_board()
+
+                            self.game_update()
                             
                         # Move left
                         elif event.key == K_LEFT:
                                                 
                             self.move(-1)
-                            self.draw_mino(self.dx, self.dy, self.mino_block)
-                            self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
 
-                            self.build_board()
+                            self.game_update()
                             
                         # Move right
                         elif event.key == K_RIGHT:
                             
                             self.move(1)
-                            self.draw_mino(self.dx, self.dy, self.mino_block)
-                            self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
 
-                            self.build_board()
+                            self.game_update()
         
                 pygame.display.update()
         
@@ -875,23 +883,3 @@ class Tetris:
                     self.clock.tick(3)
         
         pygame.quit()
-    
-
-
-# game = Tetris()
-# game.run()
-    
-    
-"""
-self.tempState.reset()
-self.tempState.board = worldState.board
-self.tempState.stone = worldState.stone
-self.tempState.stone_x = worldState.stone_x
-self.tempState.stone_y = worldState.stone_y
-self.tempState.currentStoneId = worldState.currentStoneId
-self.tempState.currentRotation = worldState.currentRotation
-self.tempState.blockMobile = worldState.blockMobile
-self.tempState.nextStoneId = worldState.nextStoneId
-self.tempState.next_stone = worldState.next_stone
-
-"""
