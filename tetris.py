@@ -188,7 +188,7 @@ class Tetris:
             ui_variables.move_sound.play()
             self.dx += direction
             
-        elif direction > 0 and not self.is_rightedge(self.dx, self.dy, self.mino_block, self.rotation):
+        elif direction > 0 and not self.is_rightedge(self.dx, self.dy, self.mino_block):
             ui_variables.move_sound.play()
             self.dx += direction
             
@@ -197,11 +197,17 @@ class Tetris:
 
 
     def rotate_clockwise(self, shape):
+        self.rotation = (self.rotation + 1) % 4
+        
         return [[shape[y][x]
                  for y in range(len(shape))]
                 for x in range(len(shape[0]) - 1, -1, -1)]
 
     def rotate_counterclockwise(self, shape):
+        self.rotation = self.rotation - 1
+        if self.rotation < 0: 
+            self.rotation = 3
+            
         return [[shape[y][x]
                  for y in range(len(shape)-1, -1, -1)]
                 for x in range(len(shape[0]))]
@@ -367,7 +373,7 @@ class Tetris:
         return False
 
     # Returns true if mino is at the right edge
-    def is_rightedge(self, x, y, grid, r):
+    def is_rightedge(self, x, y, grid):
     
         for i in range(len(grid)):
             for j in range(len(grid[0])):
@@ -579,6 +585,7 @@ class Tetris:
                                     self.hold_mino = self.mino
                                     self.mino = self.next_mino
                                     self.next_mino = randint(1, 7)
+                                    self.rotation = 0
                                     
                                 else:
                                     self.hold_mino, self.mino = self.mino, self.hold_mino
