@@ -871,8 +871,8 @@ class Tetris:
     
 
 
-game = Tetris()
-game.run()
+# game = Tetris()
+# game.run()
     
     
 """
