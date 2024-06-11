@@ -17,6 +17,7 @@ else:
 # Now the working directory is set correctly, you can proceed with your script...
 
 
+import numpy as np
 import pygame
 import operator
 from random import *
@@ -161,6 +162,19 @@ class Tetris:
 
         self.matrix = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
         self.board = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
+        
+        
+        # Hand-crafted Tetris Features
+        self.num_feats = 46
+        self.col_ht_start = 0
+        self.max_col_ht = 10
+        self.col_diff_start = 11
+        self.num_holes = 20
+        self.max_Well = 21
+        self.sum_well = 22
+        self.squared_feats_start = 23
+        self.scale_all_squared_feats = False
+        self.ht_sq_scale = 100.0
         
         
     
@@ -458,8 +472,75 @@ class Tetris:
                     self.mobile = False
         self.mobile = True
         
+        
+    def getObservation(self):
+        observation = np.zeros((207,))
+        observation[0:200] = np.reshape(
+            np.array(self.board)[0:20, :], (1, 200))
+        observation[200] = 0 if self.check_collision() else 1
+        observation[201] = self.mino
+        observation[202] = self.rotation
+        observation[203] = self.dx
+        observation[204] = self.dy
+        observation[205] = self.width
+        observation[206] = self.height
 
+        return observation
+    
+    
+    def getWellDepth(self, col, board):
+        depth = 0
+        for row in range(self.height):
+            if(board[row, col] > 0):  # encountered a filled space, stop counting
+                return depth
+            else:
+                if depth > 0:  # if well-depth count has begun, dont require left or right side to be filled
+                    depth += 1
+                # check if both the cell to the left if full and if the cell to the right is full
+                elif (col == 0 or board[row, col-1] > 0) and (col == self.width-1 or board[row, col+1] > 0):
+                    depth += 1
+        return depth
+        
 
+    def getFeatures(self):
+        feat_array = np.zeros(46,) - 1
+        feat_array[self.num_holes] = 0
+        feat_array[self.sum_well] = 0
+        board = np.array(self.board)
+        # get column heights/ max column height and number of holes features
+        for row in range(self.height+1):
+            for col in range(self.width):
+                if(board[row, col] > 0):  # filled cell
+                    if(feat_array[self.col_ht_start + col] == -1):
+                        feat_array[self.col_ht_start + col] = row
+                    if(feat_array[self.max_col_ht] == -1):
+                        feat_array[self.max_col_ht] = row
+                else:  # empty cell
+                    if (feat_array[self.col_ht_start + col] != -1):
+                        feat_array[self.num_holes] += 1
+        if(feat_array[self.max_col_ht] == -1):
+            feat_array[self.max_col_ht] = self.height
+
+        # get column difference features
+        for col in range(self.width - 1):
+            feat_array[self.col_diff_start + col] = abs(
+                feat_array[self.col_ht_start + col] - feat_array[self.col_ht_start + col + 1])
+
+        # get well depth features
+        for col in range(self.width):
+            wellDepth = self.getWellDepth(col, board)
+            feat_array[self.sum_well] += wellDepth
+            if wellDepth > feat_array[self.max_Well]:
+                feat_array[self.max_Well] = wellDepth
+
+        # get squared features and scale them so they're not too big
+        for i in range(self.squared_feats_start):
+            feat_array[self.squared_feats_start +
+                       i] = np.square(feat_array[i])
+            if(i <= self.max_col_ht or self.scale_all_squared_feats):
+                feat_array[self.squared_feats_start + i] /= self.ht_sq_scale
+
+        return feat_array
 
 
 
