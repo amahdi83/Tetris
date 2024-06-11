@@ -199,6 +199,12 @@ class Tetris:
             pass
         
         self.check_collision()
+        
+    
+    def insta_drop(self):
+        while not self.is_bottom(self.dx, self.dy, self.mino_block):
+            self.dy += 1
+        self.hard_drop = True
 
 
     def rotate_clockwise(self, shape):
@@ -590,9 +596,10 @@ class Tetris:
                         elif event.key == K_SPACE:
                                                 
                             ui_variables.drop_sound.play()
-                            while not self.is_bottom(self.dx, self.dy, self.mino_block):
-                                self.dy += 1
-                            self.hard_drop = True
+                            # while not self.is_bottom(self.dx, self.dy, self.mino_block):
+                            #     self.dy += 1
+                            # self.hard_drop = True
+                            self.insta_drop()
                             pygame.time.set_timer(pygame.USEREVENT, 1)
 
                             self.game_update()
@@ -751,7 +758,7 @@ class Tetris:
                         else:
                             if self.name_location == 0:
                                 self.screen.blit(underbar_1, (160, 420))
-                            elif name_location == 1:
+                            elif self.name_location == 1:
                                 self.screen.blit(underbar_2, (190, 420))
                             elif self.name_location == 2:
                                 self.screen.blit(underbar_3, (220, 420))
