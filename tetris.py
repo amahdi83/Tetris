@@ -125,6 +125,8 @@ class Tetris:
         self.pause = False
         self.done = False
         self.game_over = False
+        
+        self.lines = 0
 
         self.rotate = False
         self.mobile = True
@@ -164,6 +166,16 @@ class Tetris:
         self.board = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
         
         
+        # action space
+        self.perform_action = {
+            0: self.move(-1),
+            1: self.move(+1),
+            2: self.rotate_clockwise(self.mino_block),
+            3: self.rotate_counterclockwise(self.mino_block),
+            4: self.move(0),
+            5: self.insta_drop}
+        
+        
         # Hand-crafted Tetris Features
         self.num_feats = 46
         self.col_ht_start = 0
@@ -179,6 +191,7 @@ class Tetris:
         
     
     def reset(self):
+        self.lines = 0
         self.game_over = False
         self.hold = False
         self.dx, self.dy = 3, 0
@@ -188,7 +201,6 @@ class Tetris:
         self.next_mino = randint(1, 7)
         self.hold_mino = -1
         self.framerate = 30
-        self.score = 0
         self.score = 0
         self.level = 1
         self.goal = self.level * 5
@@ -213,6 +225,16 @@ class Tetris:
             pass
         
         self.check_collision()
+        
+        
+    def drop(self):
+        # Erase a mino
+        if not self.game_over:
+            self.erase_mino(self.dx, self.dy, self.mino_block)
+
+        # Move mino down
+        if not self.is_bottom(self.dx, self.dy, self.mino_block):
+            self.dy += 1
         
     
     def insta_drop(self):
@@ -543,6 +565,50 @@ class Tetris:
         return feat_array
 
 
+    # used to take a 'simulated' action for tree-searching
+    def take_action(self, action):
+        legalMove = False
+
+        # perform action
+        if action == 0:  # move left
+            legalMove = self.move(-1)
+
+        elif action == 1:  # move right
+            legalMove = self.move(1)
+
+        elif action == 2:  # move clockwise
+            legalMove = self.rotate_clockwise()
+
+        elif action == 3:  # move counterclockwise
+            legalMove = self.rotate_counterclockwise()
+
+        # else no-op action, do nothing
+        elif action == 4:
+            legalMove = True
+
+        # now check if resulting position is legal, if so keep it, otherwise don't change anything
+        return legalMove
+    
+    
+    # take step in real environment
+    def step(self, action):
+        # perform action
+        self.perform_action[action]()
+        self.drop()
+
+        # update and draw to screen
+        self.game_update()
+
+        # update reward and score
+        self.reward = self.score - self.prev_score
+        self.prev_score = self.score
+
+        # return observation, reward, done, info
+        if self.state_mode == 'pixels':
+            return self.frame, self.reward, self.game_over, {}
+        elif self.state_mode == 'observation':
+            return self.getObservation(), self.reward, self.game_over, {}
+
 
     def run(self):
     ###########################################################
@@ -596,14 +662,17 @@ class Tetris:
                                 pygame.time.set_timer(pygame.USEREVENT, self.framerate * 10)
         
                         self.game_update()
-        
+                        
+                        
                         # Erase a mino
                         if not self.game_over:
                             self.erase_mino(self.dx, self.dy, self.mino_block)
         
-                        # Move mino down
-                        if not self.is_bottom(self.dx, self.dy, self.mino_block):
-                            self.dy += 1
+                        # # Move mino down
+                        # if not self.is_bottom(self.dx, self.dy, self.mino_block):
+                        #     self.dy += 1
+                        
+                            self.drop()
         
                         # Create new mino
                         else:
@@ -862,7 +931,6 @@ class Tetris:
                             self.next_mino = randint(1, 7)
                             self.hold_mino = -1
                             self.framerate = 30
-                            self.score = 0
                             self.score = 0
                             self.level = 1
                             self.goal = self.level * 5
