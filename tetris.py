@@ -73,6 +73,23 @@ class Tetris:
 
     def random_tetromino(self):
         return random.choice(self.TETROMINOS)
+    
+    
+    def move(self, direction):
+        new_dx = self.tetromino_dx + direction
+        
+        if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+            self.tetromino_dx = new_dx
+    
+    
+    def rotate_tetromino(self, tetromino, direction):
+        if direction == 1:
+            mino = list(zip(*tetromino[::-1]))  # Rotate right
+        elif direction == -1:
+            mino = list(zip(*tetromino))[::-1]  # Rotate left
+        
+        if not self.check_collision(mino, self.tetromino_dx, self.tetromino_dy):
+            self.current_tetromino = mino
 
 
     # def draw_ghost_piece(self):
@@ -188,69 +205,7 @@ class Tetris:
             del self.board[i]
             self.board.insert(0, [0] * self.GRID_WIDTH)
         return len(full_lines)
-
-    def rotate_tetromino(self, tetromino, direction):
-        if direction == 1:
-            return list(zip(*tetromino[::-1]))  # Rotate right
-        elif direction == -1:
-            return list(zip(*tetromino))[::-1]  # Rotate left
-
-    def handle_events(self):
-        keys = pygame.key.get_pressed()
-
-        current_time = pygame.time.get_ticks()
-        if current_time - self.last_move_time >= self.move_delay:
-            # if keys[pygame.K_LEFT]:
-            #     new_dx = self.tetromino_dx - 1
-            #     if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
-            #         self.tetromino_dx = new_dx
-            # if keys[pygame.K_RIGHT]:
-            #     new_dx = self.tetromino_dx + 1
-            #     if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
-            #         self.tetromino_dx = new_dx
-            if keys[pygame.K_DOWN]:
-                new_dy = self.tetromino_dy + 1
-                if not self.check_collision(self.current_tetromino, self.tetromino_dx, new_dy):
-                    self.tetromino_dy = new_dy
-
-            self.last_move_time = current_time
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.game_over = True
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    new_dx = self.tetromino_dx - 1
-                    if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
-                        self.tetromino_dx = new_dx
-                elif event.key == pygame.K_RIGHT:
-                    new_dx = self.tetromino_dx + 1
-                    if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
-                        self.tetromino_dx = new_dx
-                elif event.key == pygame.K_UP:
-                    rotated = self.rotate_tetromino(self.current_tetromino, 1)  # Rotate right
-                    if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
-                        self.current_tetromino = rotated
-                elif event.key == pygame.K_z:
-                    rotated = self.rotate_tetromino(self.current_tetromino, -1)  # Rotate left
-                    if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
-                        self.current_tetromino = rotated
-                elif event.key == pygame.K_SPACE:
-                    while not self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy + 1):
-                        self.tetromino_dy += 1
-                elif event.key == pygame.K_h:  # Hold tetromino
-                    if self.can_hold:
-                        if self.hold_tetromino is None:
-                            self.hold_tetromino = self.current_tetromino
-                            self.current_tetromino = self.next_tetromino
-                            self.next_tetromino = self.random_tetromino()
-                        else:
-                            self.hold_tetromino, self.current_tetromino = self.current_tetromino, self.hold_tetromino
-
-                        self.tetromino_dx = self.GRID_WIDTH // 2 - len(self.current_tetromino[0]) // 2
-                        self.tetromino_dy = 0
-                        self.can_hold = False
-
+        
     def update(self):
         if pygame.time.get_ticks() - self.last_fall_time >= self.fall_time:
             new_dy = self.tetromino_dy + 1
@@ -288,6 +243,62 @@ class Tetris:
                     self.game_over = True
 
             self.last_fall_time = pygame.time.get_ticks()
+
+    def handle_events(self):
+        keys = pygame.key.get_pressed()
+
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_move_time >= self.move_delay:
+            # if keys[pygame.K_LEFT]:
+            #     new_dx = self.tetromino_dx - 1
+            #     if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+            #         self.tetromino_dx = new_dx
+            # if keys[pygame.K_RIGHT]:
+            #     new_dx = self.tetromino_dx + 1
+            #     if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+            #         self.tetromino_dx = new_dx
+            if keys[pygame.K_DOWN]:
+                new_dy = self.tetromino_dy + 1
+                if not self.check_collision(self.current_tetromino, self.tetromino_dx, new_dy):
+                    self.tetromino_dy = new_dy
+
+            self.last_move_time = current_time
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.game_over = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    self.move(-1)
+                    
+                elif event.key == pygame.K_RIGHT:
+                    self.move(1)
+                    
+                elif event.key == pygame.K_UP:
+                    self.rotate_tetromino(self.current_tetromino, 1)  # Rotate right
+                    # rotated = self.rotate_tetromino(self.current_tetromino, 1)  # Rotate right
+                    # if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
+                    #     self.current_tetromino = rotated
+                elif event.key == pygame.K_z:
+                    self.rotate_tetromino(self.current_tetromino, -1)  # Rotate left
+                    # rotated = self.rotate_tetromino(self.current_tetromino, -1)  # Rotate left
+                    # if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
+                    #     self.current_tetromino = rotated
+                elif event.key == pygame.K_SPACE:
+                    while not self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy + 1):
+                        self.tetromino_dy += 1
+                elif event.key == pygame.K_h:  # Hold tetromino
+                    if self.can_hold:
+                        if self.hold_tetromino is None:
+                            self.hold_tetromino = self.current_tetromino
+                            self.current_tetromino = self.next_tetromino
+                            self.next_tetromino = self.random_tetromino()
+                        else:
+                            self.hold_tetromino, self.current_tetromino = self.current_tetromino, self.hold_tetromino
+
+                        self.tetromino_dx = self.GRID_WIDTH // 2 - len(self.current_tetromino[0]) // 2
+                        self.tetromino_dy = 0
+                        self.can_hold = False
 
     def run(self):
         while not self.game_over:
