@@ -1,330 +1,163 @@
-"""
-Created on Thu May 16 04:20:00 2024
-
-@author: alimahdi
-
-"""
-
-import os
-import sys
-
-# Set the working directory to the directory of the executable
-if getattr(sys, 'frozen', False):
-    os.chdir(sys._MEIPASS)
-else:
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-# Now the working directory is set correctly, you can proceed with your script...
-
-
-import numpy as np
 import pygame
-import operator
-from random import *
-from pygame.locals import *
-
-
-
-class ui_variables:
-    # Fonts
-    
-    pygame.init()
-    
-    font_path = "assets/fonts/OpenSans-Light.ttf"
-    font_path_b = "assets/fonts/OpenSans-Bold.ttf"
-    font_path_i = "assets/fonts/Inconsolata.otf"
-    font_path_x = "assets/fonts/WtfAfroboyRegular-K7Lme.ttf"
-
-    
-    h1 = pygame.font.Font(font_path_x, 100)
-    h2 = pygame.font.Font(font_path, 60)
-    h4 = pygame.font.Font(font_path, 40)
-    h5 = pygame.font.Font(font_path, 26)
-    h6 = pygame.font.Font(font_path, 18)
-    h2_b = pygame.font.Font(font_path_b, 50)
-
-    h2_i = pygame.font.Font(font_path_i, 60)
-    h5_i = pygame.font.Font(font_path_i, 26)
-
-    # Sounds
-    click_sound = pygame.mixer.Sound("assets/sounds/SFX_ButtonUp.wav")
-    move_sound = pygame.mixer.Sound("assets/sounds/SFX_PieceMoveLR.wav")
-    drop_sound = pygame.mixer.Sound("assets/sounds/SFX_PieceHardDrop.wav")
-    single_sound = pygame.mixer.Sound("assets/sounds/SFX_SpecialLineClearSingle.wav")
-    double_sound = pygame.mixer.Sound("assets/sounds/SFX_SpecialLineClearDouble.wav")
-    triple_sound = pygame.mixer.Sound("assets/sounds/SFX_SpecialLineClearTriple.wav")
-    tetris_sound = pygame.mixer.Sound("assets/sounds/SFX_SpecialTetris.wav")
-
-    # Background colors
-    black = (10, 10, 10)
-    white = (255, 255, 255)
-    grey_1 = (26, 26, 26)
-    grey_2 = (35, 35, 35)
-    grey_3 = (55, 55, 55)
-
-    # Tetrimino colors
-    cyan = (69, 206, 204)  # I
-    blue = (64, 111, 249) # J
-    orange = (253, 189, 53) # L
-    yellow = (246, 227, 90) # O
-    green = (98, 190, 68) # S
-    pink = (242, 64, 235) # T
-    red = (225, 13, 27) # Z
-
-    t_color = [grey_2, cyan, blue, orange, yellow, green, pink, red, grey_3]
-    
-    
-            
-            
-
-
-
+import random
+import sys
+from pygame import Rect
 
 class Tetris:
     def __init__(self):
-        self.tetrimino = [
-            [[1], [1], [1], [1]],
-                
-            [[2, 0, 0], 
-             [2, 2, 2]],
+        pygame.init()
 
-            [[0, 0, 3], 
-             [3, 3, 3]],
+        # Fonts and Paths
+        self.font_path = "assets/fonts/OpenSans-Light.ttf"
+        self.h4 = pygame.font.Font(self.font_path, 40)
+        self.h5 = pygame.font.Font(self.font_path, 26)
 
-            [[4, 4],
-             [4, 4]],
+        # Colors
+        self.BLACK = (10, 10, 10)
+        self.WHITE = (255, 255, 255)
+        self.GREY_1 = (26, 26, 26)
+        self.GREY_2 = (35, 35, 35)
+        self.GREY_3 = (55, 55, 55)
 
-            [[0, 5, 5],
-             [5, 5, 0]],
+        self.CYAN = (69, 206, 204)  # I
+        self.BLUE = (64, 111, 249)  # J
+        self.ORANGE = (253, 189, 53)  # L
+        self.YELLOW = (246, 227, 90)  # O
+        self.GREEN = (98, 190, 68)  # S
+        self.PINK = (242, 64, 235)  # T
+        self.RED = (225, 13, 27)  # Z
 
-            [[0, 6, 0],
-             [6, 6, 6]],
+        # Tetrominos
+        self.TETROMINOS = [
+            [[1], [1], [1], [1]],  # I
+            [[2, 0, 0], [2, 2, 2]],  # J
+            [[0, 0, 3], [3, 3, 3]],  # L
+            [[4, 4], [4, 4]],  # O
+            [[0, 5, 5], [5, 5, 0]],  # S
+            [[0, 6, 0], [6, 6, 6]],  # T
+            [[7, 7, 0], [0, 7, 7]]   # Z
+        ]
 
-            [[7, 7, 0],
-             [0, 7, 7]]
-        ]    
+        self.TETROMINO_COLORS = [self.GREY_2, self.CYAN, self.BLUE, self.ORANGE, self.YELLOW, self.GREEN, self.PINK, self.RED, self.GREY_3]
 
-        # Define
-        self.block_size = 34 # Height, width of single block
-        self.width = 10 # Board width
-        self.height = 20 # Board height
-        self.framerate = 30 # Bigger -> Slower
+        # Grid and screen dimensions
+        self.GRID_WIDTH = 10
+        self.GRID_HEIGHT = 20
+        self.BLOCK_SIZE = 34
 
-
-
-        self.clock = pygame.time.Clock()
+        self.SCREEN_WIDTH = self.GRID_WIDTH * self.BLOCK_SIZE
+        self.SCREEN_HEIGHT = self.GRID_HEIGHT * self.BLOCK_SIZE
         self.screen = pygame.display.set_mode((600, 748))
-        pygame.time.set_timer(pygame.USEREVENT, self.framerate * 10)
-        pygame.display.set_caption("AI Tetris in Python")
+        pygame.display.set_caption("Tetris")
 
-
-
-        # Initial values
-        self.blink = False
-        self.start = False
-        self.pause = False
-        self.done = False
+        # Game variables
+        self.board = [[0] * self.GRID_WIDTH for _ in range(self.GRID_HEIGHT)]
         self.game_over = False
-        
-        self.lines = 0
+        self.clock = pygame.time.Clock()
 
-        self.rotate = False
-        self.mobile = True
+        self.SCORE = 0
+        self.LEVEL = 1
+        self.GOAL = 5 * self.LEVEL
 
-        self.score = 0
-        self.level = 1
-        self.goal = self.level * 5
-        self.bottom_count = 0
-        self.hard_drop = False
+        self.current_tetromino = self.random_tetromino()
+        self.tetromino_dx = self.GRID_WIDTH // 2 - len(self.current_tetromino[0]) // 2
+        self.tetromino_dy = 0
 
-        self.dx, self.dy = 3, 0 # Minos location status
-        self.rotation = 0 # Minos rotation status
+        self.next_tetromino = self.random_tetromino()
+        self.hold_tetromino = None  # Variable to store the held tetromino
+        self.can_hold = True  # Flag to prevent multiple holds in one turn
+        self.fall_time = 500
+        self.last_fall_time = pygame.time.get_ticks()
+        self.last_move_time = pygame.time.get_ticks()
+        self.move_delay = 100  # Delay for continuous movement
 
-        self.mino = randint(1, 7) # Current mino
-        self.next_mino = randint(1, 7) # Next mino
+    def random_tetromino(self):
+        return random.choice(self.TETROMINOS)
 
-        self.mino_block = self.tetrimino[self.mino-1]
-        self.next_mino_block = self.tetrimino[self.next_mino-1]
 
-        self.hold = False # Hold status
-        self.hold_mino = -1 # Holded mino
-        self.hold_mino_block = self.tetrimino[self.hold_mino]
-
-        self.name_location = 0
-        self.name = [65, 65, 65]
-
-        with open('leaderboard.txt') as f:
-            lines = f.readlines()
-        lines = [line.rstrip('\n') for line in open('leaderboard.txt')]
-
-        self.leaders = {'AAA': 0, 'BBB': 0, 'CCC': 0}
-        for i in lines:
-            self.leaders[i.split(' ')[0]] = int(i.split(' ')[1])
-        self.leaders = sorted(self.leaders.items(), key=operator.itemgetter(1), reverse=True)
-
-        self.matrix = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
-        self.board = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
-        
-        
-        # action space
-        self.perform_action = {
-            0: self.move(-1),
-            1: self.move(+1),
-            2: self.rotate_clockwise(self.mino_block),
-            3: self.rotate_counterclockwise(self.mino_block),
-            4: self.move(0),
-            5: self.insta_drop}
-        
-        
-        # Hand-crafted Tetris Features
-        self.num_feats = 46
-        self.col_ht_start = 0
-        self.max_col_ht = 10
-        self.col_diff_start = 11
-        self.num_holes = 20
-        self.max_Well = 21
-        self.sum_well = 22
-        self.squared_feats_start = 23
-        self.scale_all_squared_feats = False
-        self.ht_sq_scale = 100.0
-        
-        
+    # def draw_ghost_piece(self):
+    #     # Calculate the ghost piece's position
+    #     ghost_dy = self.tetromino_dy
+    #     while not self.check_collision(self.current_tetromino, self.tetromino_dx, ghost_dy + 1):
+    #         ghost_dy += 1
     
-    def reset(self):
-        self.lines = 0
-        self.game_over = False
-        self.hold = False
-        self.dx, self.dy = 3, 0
-        self.rotation = 0
-        self.mobile = 0
-        self.mino = randint(1, 7)
-        self.next_mino = randint(1, 7)
-        self.hold_mino = -1
-        self.framerate = 30
-        self.score = 0
-        self.level = 1
-        self.goal = self.level * 5
-        self.bottom_count = 0
-        self.hard_drop = False
-        self.name_location = 0
-        self.name = [65, 65, 65]
-        self.matrix = [[0 for y in range(self.width)] for x in range(self.height + 1)]
-        self.board = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
-        
-        
-    def move(self, direction):
-        if direction < 0 and not self.is_leftedge(self.dx, self.dy, self.mino_block):
-            ui_variables.move_sound.play()
-            self.dx += direction
-            
-        elif direction > 0 and not self.is_rightedge(self.dx, self.dy, self.mino_block):
-            ui_variables.move_sound.play()
-            self.dx += direction
-            
-        else:
-            pass
-        
-        self.check_collision()
-        
-        
-    def drop(self):
-        # Erase a mino
-        if not self.game_over:
-            self.erase_mino(self.dx, self.dy, self.mino_block)
-
-        # Move mino down
-        if not self.is_bottom(self.dx, self.dy, self.mino_block):
-            self.dy += 1
-        
+    #     # Draw the ghost piece
+    #     for row in range(len(self.current_tetromino)):
+    #         for col in range(len(self.current_tetromino[row])):
+    #             if self.current_tetromino[row][col]:
+    #                 dx = 34 + self.BLOCK_SIZE * (self.tetromino_dx + col)
+    #                 dy = 34 + self.BLOCK_SIZE * (ghost_dy + row)
+    #                 pygame.draw.rect(self.screen, self.TETROMINO_COLORS[self.current_tetromino[row][col]], Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE), 1)
     
-    def insta_drop(self):
-        while not self.is_bottom(self.dx, self.dy, self.mino_block):
-            self.dy += 1
-        self.hard_drop = True
+    
+    def draw_ghost_piece(self):
+        # Calculate the ghost piece's position
+        ghost_dy = self.tetromino_dy
+        while not self.check_collision(self.current_tetromino, self.tetromino_dx, ghost_dy + 1):
+            ghost_dy += 1
+    
+        for row in range(len(self.current_tetromino)):
+            for col in range(len(self.current_tetromino[row])):
+                if self.current_tetromino[row][col]:
+                    # Calculate the position of the ghost block
+                    dx = 34 + self.BLOCK_SIZE * (self.tetromino_dx + col)
+                    dy = 34 + self.BLOCK_SIZE * (ghost_dy + row)
+    
+                    # Draw the ghost block in GREY_3
+                    pygame.draw.rect(self.screen, self.GREY_3, pygame.Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE))
+    
+                    # Draw the border of the ghost block in GREY_2 for contrast
+                    pygame.draw.rect(self.screen, self.GREY_1, pygame.Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE), 1)
 
 
-    def rotate_clockwise(self, shape):
-        self.check_collision()
-        self.rotation = (self.rotation + 1) % 4
-        
-        return [[shape[y][x]
-                 for y in range(len(shape))]
-                for x in range(len(shape[0]) - 1, -1, -1)]
 
-    def rotate_counterclockwise(self, shape):
-        self.check_collision()
-        self.rotation = self.rotation - 1
-        if self.rotation < 0: 
-            self.rotation = 3
-            
-        return [[shape[y][x]
-                 for y in range(len(shape)-1, -1, -1)]
-                for x in range(len(shape[0]))]
+    
+    def draw_grid(self):
+        self.screen.fill(self.GREY_1)
+        pygame.draw.rect(self.screen, self.WHITE, pygame.Rect(408, 0, 192, 748))
 
-    # Draw block
-    def draw_block(self, x, y, color):
-        pygame.draw.rect(
-            self.screen,
-            color,
-            Rect(x, y, self.block_size, self.block_size)
-        )
-        pygame.draw.rect(
-            self.screen,
-            ui_variables.grey_1,
-            Rect(x, y, self.block_size, self.block_size),
-            1
-        )
+        for x in range(self.GRID_WIDTH):
+            for y in range(self.GRID_HEIGHT):
+                px = 34 + self.BLOCK_SIZE * x
+                py = 34 + self.BLOCK_SIZE * y
+                self.draw_tetromino(px, py, self.TETROMINO_COLORS[self.board[y][x]])
+                
+        # Draw the ghost piece
+        self.draw_ghost_piece()
 
+        for row in range(len(self.current_tetromino)):
+            for col in range(len(self.current_tetromino[row])):
+                if self.current_tetromino[row][col]:
+                    dx = 34 + self.BLOCK_SIZE * (self.tetromino_dx + col)
+                    dy = 34 + self.BLOCK_SIZE * (self.tetromino_dy + row)
+                    pygame.draw.rect(self.screen, self.TETROMINO_COLORS[self.current_tetromino[row][col]], pygame.Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE))
+                    pygame.draw.rect(self.screen, self.GREY_1, Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE), 1)
 
-    # Draw game screen
-    def draw_board(self, grid_n, grid_h, score, level, goal):
-        self.screen.fill(ui_variables.grey_1)
-        
-        pygame.draw.rect(
-            self.screen,
-            ui_variables.white,
-            Rect(408, 0, 192, 748)
-        )
+        for i, row in enumerate(self.next_tetromino):
+            for j, col in enumerate(row):
+                if col:
+                    dx = 440 + self.BLOCK_SIZE * j
+                    dy = 260 + self.BLOCK_SIZE * i
+                    pygame.draw.rect(self.screen, self.TETROMINO_COLORS[col], pygame.Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE))
 
-        
-        for i in range(len(grid_n)):
-            for j in range(len(grid_n[0])):
-                dx = 440 + self.block_size * j
-                dy = 260 + self.block_size * i
-                if grid_n[i][j] != 0:
-                    pygame.draw.rect(
-                        self.screen,
-                        ui_variables.t_color[grid_n[i][j]],
-                        Rect(dx, dy, self.block_size, self.block_size)
-                    )
-
-        
-        if self.hold_mino != -1:
-            for i in range(len(grid_h)):
-                for j in range(len(grid_h[0])):
-                    dx = 440 + self.block_size * j
-                    dy = 70 + self.block_size * i
-                    if grid_h[i][j] != 0:
-                        pygame.draw.rect(
-                            self.screen,
-                            ui_variables.t_color[grid_h[i][j]],
-                            Rect(dx, dy, self.block_size, self.block_size)
-                        )
-
-        # Set max score
-        if self.score > 999999:
-            self.score = 999999
+        if self.hold_tetromino:
+            for i, row in enumerate(self.hold_tetromino):
+                for j, col in enumerate(row):
+                    if col:
+                        dx = 440 + self.BLOCK_SIZE * j
+                        dy = 70 + self.BLOCK_SIZE * i
+                        pygame.draw.rect(self.screen, self.TETROMINO_COLORS[col], pygame.Rect(dx, dy, self.BLOCK_SIZE, self.BLOCK_SIZE))
 
         # Draw texts
-        text_hold = ui_variables.h5.render("HOLD", 1, ui_variables.black)
-        text_next = ui_variables.h5.render("NEXT", 1, ui_variables.black)
-        text_score = ui_variables.h5.render("SCORE", 1, ui_variables.black)
-        score_value = ui_variables.h4.render(str(self.score), 1, ui_variables.black)
-        text_level = ui_variables.h5.render("LEVEL", 1, ui_variables.black)
-        level_value = ui_variables.h4.render(str(self.level), 1, ui_variables.black)
-        text_goal = ui_variables.h5.render("GOAL", 1, ui_variables.black)
-        goal_value = ui_variables.h4.render(str(self.goal), 1, ui_variables.black)
-        
+        text_hold = self.h5.render("HOLD", 1, self.BLACK)
+        text_next = self.h5.render("NEXT", 1, self.BLACK)
+        text_score = self.h5.render("SCORE", 1, self.BLACK)
+        score_value = self.h4.render(str(self.SCORE), 1, self.BLACK)
+        text_level = self.h5.render("LEVEL", 1, self.BLACK)
+        level_value = self.h4.render(str(self.LEVEL), 1, self.BLACK)
+        text_goal = self.h5.render("GOAL", 1, self.BLACK)
+        goal_value = self.h4.render(str(self.GOAL), 1, self.BLACK)
+
         # Place texts
         self.screen.blit(text_hold, (430, 28))
         self.screen.blit(text_next, (430, 218))
@@ -334,708 +167,140 @@ class Tetris:
         self.screen.blit(level_value, (440, 560))
         self.screen.blit(text_goal, (430, 648))
         self.screen.blit(goal_value, (440, 680))
-            
-        # Draw board
-        for x in range(self.width):
-            for y in range(self.height):
-                dx = 34 + self.block_size * x
-                dy = 34 + self.block_size * y
-                self.draw_block(dx, dy, ui_variables.t_color[self.matrix[y + 1][x]])
 
+    def draw_tetromino(self, x, y, color):
+        pygame.draw.rect(self.screen, color, Rect(x, y, self.BLOCK_SIZE, self.BLOCK_SIZE))
+        pygame.draw.rect(self.screen, self.GREY_1, Rect(x, y, self.BLOCK_SIZE, self.BLOCK_SIZE), 1)
 
-
-    # Draw a tetrimino
-    def draw_mino(self, x, y, grid):
-    
-        tx, ty = x, y
-        while not self.is_bottom(tx, ty, grid):
-            ty += 1
-    
-        # Draw ghost
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    self.matrix[ty + i][tx + j] = 8
-    
-        # Draw mino
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    self.matrix[y + i][x + j] = grid[i][j]
-                
-
-
-
-    def build_board(self):
-        # Erase ghost
-        for j in range(21):
-            for i in range(10):
-                if self.matrix[j][i] == 8:
-                    self.board[j][i] = 0
-                else:
-                    self.board[j][i] = self.matrix[j][i]
-                
-                
-                
-                
-    def erase_mino(self, x, y, grid):
-        # Erase ghost
-        for j in range(21):
-            for i in range(10):
-                if self.matrix[j][i] == 8:
-                    self.matrix[j][i] = 0
-    
-        # Erase mino
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    self.matrix[y + i][x + j] = 0
-
-
-
-    # Returns true if mino is at bottom
-    def is_bottom(self, x, y, grid):
-    
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    if (y + i + 1) > 20:
+    def check_collision(self, tetromino, dx, dy):
+        for row in range(len(tetromino)):
+            for col in range(len(tetromino[row])):
+                if tetromino[row][col]:
+                    x = dx + col
+                    y = dy + row
+                    if x < 0 or x >= self.GRID_WIDTH or y >= self.GRID_HEIGHT or self.board[y][x]:
                         return True
-                    elif self.matrix[y + i + 1][x + j] != 0 and self.matrix[y + i + 1][x + j] != 8:
-                        return True
-    
         return False
 
+    def clear_lines(self):
+        full_lines = [i for i, row in enumerate(self.board) if all(row)]
+        for i in full_lines:
+            del self.board[i]
+            self.board.insert(0, [0] * self.GRID_WIDTH)
+        return len(full_lines)
 
+    def rotate_tetromino(self, tetromino, direction):
+        if direction == 1:
+            return list(zip(*tetromino[::-1]))  # Rotate right
+        elif direction == -1:
+            return list(zip(*tetromino))[::-1]  # Rotate left
 
-    # Returns true if mino is at the left edge
-    def is_leftedge(self, x, y, grid):
-    
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    if (x + j - 1) < 0:
-                        return True
-                    elif self.matrix[y + i][x + j - 1] != 0:
-                        return True
-    
-        return False
+    def handle_events(self):
+        keys = pygame.key.get_pressed()
 
-    # Returns true if mino is at the right edge
-    def is_rightedge(self, x, y, grid):
-    
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    if (x + j + 1) > 9:
-                        return True
-                    elif self.matrix[y + i][x + j + 1] != 0:
-                        return True
-    
-        return False
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_move_time >= self.move_delay:
+            # if keys[pygame.K_LEFT]:
+            #     new_dx = self.tetromino_dx - 1
+            #     if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+            #         self.tetromino_dx = new_dx
+            # if keys[pygame.K_RIGHT]:
+            #     new_dx = self.tetromino_dx + 1
+            #     if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+            #         self.tetromino_dx = new_dx
+            if keys[pygame.K_DOWN]:
+                new_dy = self.tetromino_dy + 1
+                if not self.check_collision(self.current_tetromino, self.tetromino_dx, new_dy):
+                    self.tetromino_dy = new_dy
 
+            self.last_move_time = current_time
 
-    # Returns true if turning right is possible
-    def is_turnable_r(self, x, y, grid):
-    
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    if (x + j) < 0 or (x + j) > 9 or (y + i) < 0 or (y + i) > 20:
-                        return False
-                    elif self.matrix[y + i][x + j] != 0:
-                        return False
-    
-        return True
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.game_over = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_LEFT:
+                    new_dx = self.tetromino_dx - 1
+                    if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+                        self.tetromino_dx = new_dx
+                elif event.key == pygame.K_RIGHT:
+                    new_dx = self.tetromino_dx + 1
+                    if not self.check_collision(self.current_tetromino, new_dx, self.tetromino_dy):
+                        self.tetromino_dx = new_dx
+                elif event.key == pygame.K_UP:
+                    rotated = self.rotate_tetromino(self.current_tetromino, 1)  # Rotate right
+                    if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
+                        self.current_tetromino = rotated
+                elif event.key == pygame.K_z:
+                    rotated = self.rotate_tetromino(self.current_tetromino, -1)  # Rotate left
+                    if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
+                        self.current_tetromino = rotated
+                elif event.key == pygame.K_SPACE:
+                    while not self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy + 1):
+                        self.tetromino_dy += 1
+                elif event.key == pygame.K_h:  # Hold tetromino
+                    if self.can_hold:
+                        if self.hold_tetromino is None:
+                            self.hold_tetromino = self.current_tetromino
+                            self.current_tetromino = self.next_tetromino
+                            self.next_tetromino = self.random_tetromino()
+                        else:
+                            self.hold_tetromino, self.current_tetromino = self.current_tetromino, self.hold_tetromino
 
+                        self.tetromino_dx = self.GRID_WIDTH // 2 - len(self.current_tetromino[0]) // 2
+                        self.tetromino_dy = 0
+                        self.can_hold = False
 
-    # Returns true if turning left is possible
-    def is_turnable_l(self, x, y, grid):
-    
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0:
-                    if (x + j) < 0 or (x + j) > 9 or (y + i) < 0 or (y + i) > 20:
-                        return False
-                    elif self.matrix[y + i][x + j] != 0:
-                        return False
-    
-        return True
-
-
-    # Returns true if new block is drawable
-    def is_stackable(self, grid):
-    
-        for i in range(len(grid)):
-            for j in range(len(grid[0])):
-                if grid[i][j] != 0 and self.matrix[i][3 + j] != 0:
-                    return False
-    
-        return True
-    
-    
-    def game_update(self):
-        self.draw_mino(self.dx, self.dy, self.mino_block)
-        self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
-        
-        self.build_board()
-        
-        self.check_collision()
-        
-    
-    def check_collision(self):
-        off_x, off_y = self.dx, self.dy
-        for cy, row in enumerate(self.mino_block):
-            for cx, cell in enumerate(row):
-                try:
-                    if cell and self.board[cy + off_y][cx + off_x]:
-                        self.mobile = False
-                except IndexError:
-                    self.mobile = False
-        self.mobile = True
-        
-        
-    def getObservation(self):
-        observation = np.zeros((207,))
-        observation[0:200] = np.reshape(
-            np.array(self.board)[0:20, :], (1, 200))
-        observation[200] = 0 if self.check_collision() else 1
-        observation[201] = self.mino
-        observation[202] = self.rotation
-        observation[203] = self.dx
-        observation[204] = self.dy
-        observation[205] = self.width
-        observation[206] = self.height
-
-        return observation
-    
-    
-    def getWellDepth(self, col, board):
-        depth = 0
-        for row in range(self.height):
-            if(board[row, col] > 0):  # encountered a filled space, stop counting
-                return depth
+    def update(self):
+        if pygame.time.get_ticks() - self.last_fall_time >= self.fall_time:
+            new_dy = self.tetromino_dy + 1
+            if not self.check_collision(self.current_tetromino, self.tetromino_dx, new_dy):
+                self.tetromino_dy = new_dy
             else:
-                if depth > 0:  # if well-depth count has begun, dont require left or right side to be filled
-                    depth += 1
-                # check if both the cell to the left if full and if the cell to the right is full
-                elif (col == 0 or board[row, col-1] > 0) and (col == self.width-1 or board[row, col+1] > 0):
-                    depth += 1
-        return depth
-        
+                for row in range(len(self.current_tetromino)):
+                    for col in range(len(self.current_tetromino[row])):
+                        if self.current_tetromino[row][col]:
+                            self.board[self.tetromino_dy + row][self.tetromino_dx + col] = self.current_tetromino[row][col]
+                lines_cleared = self.clear_lines()
 
-    def getFeatures(self):
-        feat_array = np.zeros(46,) - 1
-        feat_array[self.num_holes] = 0
-        feat_array[self.sum_well] = 0
-        board = np.array(self.board)
-        # get column heights/ max column height and number of holes features
-        for row in range(self.height+1):
-            for col in range(self.width):
-                if(board[row, col] > 0):  # filled cell
-                    if(feat_array[self.col_ht_start + col] == -1):
-                        feat_array[self.col_ht_start + col] = row
-                    if(feat_array[self.max_col_ht] == -1):
-                        feat_array[self.max_col_ht] = row
-                else:  # empty cell
-                    if (feat_array[self.col_ht_start + col] != -1):
-                        feat_array[self.num_holes] += 1
-        if(feat_array[self.max_col_ht] == -1):
-            feat_array[self.max_col_ht] = self.height
+                if lines_cleared == 1:
+                    self.SCORE += 50 * self.LEVEL
+                elif lines_cleared == 2:
+                    self.SCORE += 150 * self.LEVEL
+                elif lines_cleared == 3:
+                    self.SCORE += 350 * self.LEVEL
+                elif lines_cleared == 4:
+                    self.SCORE += 1000 * self.LEVEL
 
-        # get column difference features
-        for col in range(self.width - 1):
-            feat_array[self.col_diff_start + col] = abs(
-                feat_array[self.col_ht_start + col] - feat_array[self.col_ht_start + col + 1])
+                self.GOAL -= lines_cleared
+                if self.GOAL < 1 and self.LEVEL < 15:
+                    self.LEVEL += 1
+                    self.GOAL += self.LEVEL * 5
+                    self.fall_time = int(self.fall_time * 0.8)
 
-        # get well depth features
-        for col in range(self.width):
-            wellDepth = self.getWellDepth(col, board)
-            feat_array[self.sum_well] += wellDepth
-            if wellDepth > feat_array[self.max_Well]:
-                feat_array[self.max_Well] = wellDepth
+                self.current_tetromino = self.next_tetromino
+                self.tetromino_dx = self.GRID_WIDTH // 2 - len(self.current_tetromino[0]) // 2
+                self.tetromino_dy = 0
+                self.next_tetromino = self.random_tetromino()
+                self.can_hold = True  # Allow holding again
 
-        # get squared features and scale them so they're not too big
-        for i in range(self.squared_feats_start):
-            feat_array[self.squared_feats_start +
-                       i] = np.square(feat_array[i])
-            if(i <= self.max_col_ht or self.scale_all_squared_feats):
-                feat_array[self.squared_feats_start + i] /= self.ht_sq_scale
+                if self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy):
+                    self.game_over = True
 
-        return feat_array
-
-
-    # used to take a 'simulated' action for tree-searching
-    def take_action(self, action):
-        legalMove = False
-
-        # perform action
-        if action == 0:  # move left
-            legalMove = self.move(-1)
-
-        elif action == 1:  # move right
-            legalMove = self.move(1)
-
-        elif action == 2:  # move clockwise
-            legalMove = self.rotate_clockwise()
-
-        elif action == 3:  # move counterclockwise
-            legalMove = self.rotate_counterclockwise()
-
-        # else no-op action, do nothing
-        elif action == 4:
-            legalMove = True
-
-        # now check if resulting position is legal, if so keep it, otherwise don't change anything
-        return legalMove
-    
-    
-    # take step in real environment
-    def step(self, action):
-        # perform action
-        self.perform_action[action]()
-        self.drop()
-
-        # update and draw to screen
-        self.game_update()
-
-        # update reward and score
-        self.reward = self.score - self.prev_score
-        self.prev_score = self.score
-
-        # return observation, reward, done, info
-        if self.state_mode == 'pixels':
-            return self.frame, self.reward, self.game_over, {}
-        elif self.state_mode == 'observation':
-            return self.getObservation(), self.reward, self.game_over, {}
-
+            self.last_fall_time = pygame.time.get_ticks()
 
     def run(self):
-    ###########################################################
-    # Loop Start
-    ###########################################################
-    
-        while not self.done:
-            # Pause screen
-            if self.pause:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        self.done = True
-                    elif event.type == USEREVENT:
-                        pygame.time.set_timer(pygame.USEREVENT, 300)
-                        
-                        self.next_mino_block = self.tetrimino[self.next_mino-1]
-                        self.hold_mino_block = self.tetrimino[self.hold_mino-1]
-                        self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
-        
-                        pause_text = ui_variables.h2_b.render("PAUSED", 1, ui_variables.white)
-                        pause_start = ui_variables.h5.render("Press esc to continue", 1, ui_variables.white)
-        
-                        self.screen.blit(pause_text, (90, 305))
-                        if self.blink:
-                            self.screen.blit(pause_start, (85, 380))
-                            self.blink = False
-                        else:
-                            self.blink = True
-                        pygame.display.update()
-                    elif event.type == KEYDOWN:
-                        self.mino_block = self.tetrimino[self.mino-1]
-                        self.erase_mino(self.dx, self.dy, self.mino_block)
-                        
-                        if event.key == K_ESCAPE:
-                            self.pause = False
-                            ui_variables.click_sound.play()
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
-        
-            # Game screen
-            elif self.start:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        self.done = True
-                    elif event.type == USEREVENT:
-                        # Set speed
-                        if not self.game_over:
-                            keys_pressed = pygame.key.get_pressed()
-                            if keys_pressed[K_DOWN]:
-                                pygame.time.set_timer(pygame.USEREVENT, self.framerate * 1)
-                            else:
-                                pygame.time.set_timer(pygame.USEREVENT, self.framerate * 10)
-        
-                        self.game_update()
-                        
-                        
-                        # Erase a mino
-                        if not self.game_over:
-                            self.erase_mino(self.dx, self.dy, self.mino_block)
-        
-                        # # Move mino down
-                        # if not self.is_bottom(self.dx, self.dy, self.mino_block):
-                        #     self.dy += 1
-                        
-                            self.drop()
-        
-                        # Create new mino
-                        else:
-                            if self.hard_drop or self.bottom_count == 6:
-                                self.hard_drop = False
-                                self.bottom_count = 0
-                                self.score += 10 * self.level
-                                
-                                self.game_update()
-                                
-                                if self.is_stackable(self.next_mino_block):
-                                    self.mino = self.next_mino
-                                    self.next_mino = randint(1, 7)
-                                    
-                                    self.mino_block = self.tetrimino[self.mino-1]
-                                    self.next_mino_block = self.tetrimino[self.next_mino-1]
-                                    
-                                    self.dx, self.dy = 3, 0
-                                    self.rotation = 0
-                                    self.hold = False
-                                else:
-                                    self.start = False
-                                    self.game_over = True
-                                    pygame.time.set_timer(pygame.USEREVENT, 1)
-                            else:
-                                self.bottom_count += 1
-        
-                        # Erase line
-                        erase_count = 0
-                        for j in range(21):
-                            is_full = True
-                            for i in range(10):
-                                if self.matrix[j][i] == 0:
-                                    is_full = False
-                            if is_full:
-                                erase_count += 1
-                                k = j
-                                while k > 0:
-                                    for i in range(10):
-                                        self.matrix[k][i] = self.matrix[k - 1][i]
-                                    k -= 1
-                        if erase_count == 1:
-                            ui_variables.single_sound.play()
-                            self.score += 50 * self.level
-                        elif erase_count == 2:
-                            ui_variables.double_sound.play()
-                            self.score += 150 * self.level
-                        elif erase_count == 3:
-                            ui_variables.triple_sound.play()
-                            self.score += 350 * self.level
-                        elif erase_count == 4:
-                            ui_variables.tetris_sound.play()
-                            self.score += 1000 * self.level
-        
-                        # Increase level
-                        self.goal -= erase_count
-                        if self.goal < 1 and self.level < 15:
-                            self.level += 1
-                            self.goal += self.level * 5
-                            self.framerate = int(self.framerate * 0.8)
-        
-                    elif event.type == KEYDOWN:
-                                                        
-                        self.erase_mino(self.dx, self.dy, self.mino_block)
-                        
-                        if event.key == K_ESCAPE:
-                                                
-                            ui_variables.click_sound.play()
-                            self.pause = True
-                        # Hard drop
-                        elif event.key == K_SPACE:
-                                                
-                            ui_variables.drop_sound.play()
-                            # while not self.is_bottom(self.dx, self.dy, self.mino_block):
-                            #     self.dy += 1
-                            # self.hard_drop = True
-                            self.insta_drop()
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
+        while not self.game_over:
+            self.handle_events()
+            self.update()
+            self.draw_grid()
+            pygame.display.update()
+            self.clock.tick(30)
 
-                            self.game_update()
-                            
-                        # Hold
-                        elif event.key == K_LSHIFT or event.key == K_c:
-                                                
-                            if self.hold == False:
-                                ui_variables.move_sound.play()
-                                if self.hold_mino == -1:
-                                    self.hold_mino = self.mino
-                                    self.mino = self.next_mino
-                                    self.next_mino = randint(1, 7)
-                                    self.rotation = 0
-                                    
-                                else:
-                                    self.hold_mino, self.mino = self.mino, self.hold_mino
-                                    
-                                self.mino_block = self.tetrimino[self.mino-1]
-                                self.hold_mino_block = self.tetrimino[self.hold_mino-1]
-                                self.next_mino_block = self.tetrimino[self.next_mino-1]
-                                    
-                                self.dx, self.dy = 3, 0
-                                self.rotation = 0
-                                self.hold = True
-                                
-                            self.game_update()
-                            
-                        # Turn right
-                        elif event.key == K_UP or event.key == K_x:
-                                                
-                            self.mino_block = self.rotate_clockwise(self.mino_block)
-                            
-                            
-                            if self.is_turnable_r(self.dx, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                            # Kick
-                            elif self.is_turnable_r(self.dx, self.dy - 1, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dy -= 1
-                            elif self.is_turnable_r(self.dx + 1, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx += 1
-                            elif self.is_turnable_r(self.dx - 1, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx -= 1
-                            elif self.is_turnable_r(self.dx, self.dy - 2, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dy -= 2
-                            elif self.is_turnable_r(self.dx + 2, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx += 2
-                            elif self.is_turnable_r(self.dx - 2, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx -= 2
-                            elif self.is_turnable_r(self.dx, self.dy - 3, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dy -= 3
-                            elif self.is_turnable_r(self.dx + 3, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx += 3
-                            elif self.is_turnable_r(self.dx - 3, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx -= 3
-                            
-                            self.game_update()
-                            
-                        # Turn left
-                        elif event.key == K_z or event.key == K_LCTRL:
-                            
-                            self.mino_block = self.rotate_counterclockwise(self.mino_block)
-                                                
-                            if self.is_turnable_l(self.dx, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                            # Kick
-                            elif self.is_turnable_l(self.dx, self.dy - 1, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dy -= 1
-                            elif self.is_turnable_l(self.dx + 1, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx += 1
-                            elif self.is_turnable_l(self.dx - 1, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx -= 1
-                            elif self.is_turnable_l(self.dx, self.dy - 2, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dy -= 2
-                            elif self.is_turnable_l(self.dx + 2, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx += 2
-                            elif self.is_turnable_l(self.dx - 2, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx -= 2
-                            elif self.is_turnable_l(self.dx, self.dy - 3, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dy -= 3
-                            elif self.is_turnable_l(self.dx + 3, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx += 3
-                            elif self.is_turnable_l(self.dx - 3, self.dy, self.mino_block):
-                                ui_variables.move_sound.play()
-                                self.dx -= 3
-
-                            self.game_update()
-                            
-                        # Move left
-                        elif event.key == K_LEFT:
-                                                
-                            self.move(-1)
-
-                            self.game_update()
-                            
-                        # Move right
-                        elif event.key == K_RIGHT:
-                            
-                            self.move(1)
-
-                            self.game_update()
-        
-                pygame.display.update()
-        
-            # Game over screen
-            elif self.game_over:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        self.done = False
-                    elif event.type == USEREVENT:
-                        pygame.time.set_timer(pygame.USEREVENT, 300)
-                        over_text_1 = ui_variables.h2_b.render("GAME", 1, ui_variables.white)
-                        over_text_2 = ui_variables.h2_b.render("OVER", 1, ui_variables.white)
-                        over_start = ui_variables.h5.render("Press return to continue", 1, ui_variables.white)
-        
-                        self.next_mino_block = self.tetrimino[self.next_mino-1]
-                        self.hold_mino_block = self.tetrimino[self.hold_mino-1]
-                        self.draw_board(self.next_mino_block, self.hold_mino_block, self.score, self.level, self.goal)
-                        
-                        
-                        self.screen.blit(over_text_1, (55, 320))
-                        self.screen.blit(over_text_2, (220, 320))
-        
-                        name_1 = ui_variables.h2_i.render(chr(self.name[0]), 1, ui_variables.white)
-                        name_2 = ui_variables.h2_i.render(chr(self.name[1]), 1, ui_variables.white)
-                        name_3 = ui_variables.h2_i.render(chr(self.name[2]), 1, ui_variables.white)
-        
-                        underbar_1 = ui_variables.h2.render("_", 1, ui_variables.white)
-                        underbar_2 = ui_variables.h2.render("_", 1, ui_variables.white)
-                        underbar_3 = ui_variables.h2.render("_", 1, ui_variables.white)
-        
-                        self.screen.blit(name_1, (160, 430))
-                        self.screen.blit(name_2, (190, 430))
-                        self.screen.blit(name_3, (220, 430))
-        
-                        if self.blink:
-                            self.screen.blit(over_start, (65, 390))
-                            self.blink = False
-                        else:
-                            if self.name_location == 0:
-                                self.screen.blit(underbar_1, (160, 420))
-                            elif self.name_location == 1:
-                                self.screen.blit(underbar_2, (190, 420))
-                            elif self.name_location == 2:
-                                self.screen.blit(underbar_3, (220, 420))
-                            self.blink = True
-        
-                        pygame.display.update()
-                    elif event.type == KEYDOWN:
-                        if event.key == K_RETURN:
-                            ui_variables.click_sound.play()
-        
-                            outfile = open('leaderboard.txt','a')
-                            outfile.write(chr(self.name[0]) + chr(self.name[1]) + chr(self.name[2]) + ' ' + str(self.score) + '\n')
-                            outfile.close()
-        
-                            self.game_over = False
-                            self.hold = False
-                            self.dx, self.dy = 3, 0
-                            self.rotation = 0
-                            self.mino = randint(1, 7)
-                            self.next_mino = randint(1, 7)
-                            self.hold_mino = -1
-                            self.framerate = 30
-                            self.score = 0
-                            self.level = 1
-                            self.goal = self.level * 5
-                            self.bottom_count = 0
-                            self.hard_drop = False
-                            self.name_location = 0
-                            self.name = [65, 65, 65]
-                            self.matrix = [[0 for y in range(self.width)] for x in range(self.height + 1)]
-                            self.board = [[0 for y in range(self.width)] for x in range(self.height + 1)] # Board matrix
-                            
-                            self.reset()
-        
-                            with open('leaderboard.txt') as f:
-                                lines = f.readlines()
-                            lines = [line.rstrip('\n') for line in open('leaderboard.txt')]
-        
-                            self.leaders = {'AAA': 0, 'BBB': 0, 'CCC': 0}
-                            for i in lines:
-                                self.leaders[i.split(' ')[0]] = int(i.split(' ')[1])
-                            self.leaders = sorted(self.leaders.items(), key=operator.itemgetter(1), reverse=True)
-        
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
-                        elif event.key == K_RIGHT:
-                            if self.name_location != 2:
-                                self.name_location += 1
-                            else:
-                                self.name_location = 0
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
-                        elif event.key == K_LEFT:
-                            if self.name_location != 0:
-                                self.name_location -= 1
-                            else:
-                                self.name_location = 2
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
-                        elif event.key == K_UP:
-                            ui_variables.click_sound.play()
-                            if self.name[self.name_location] != 90:
-                                self.name[self.name_location] += 1
-                            else:
-                                self.name[self.name_location] = 65
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
-                        elif event.key == K_DOWN:
-                            ui_variables.click_sound.play()
-                            if self.name[self.name_location] != 65:
-                                self.name[self.name_location] -= 1
-                            else:
-                                self.name[self.name_location] = 90
-                            pygame.time.set_timer(pygame.USEREVENT, 1)
-                        
-                        # self.start = True
-        
-            # Start screen
-            else:
-                for event in pygame.event.get():
-                    if event.type == QUIT:
-                        self.done = True
-                    elif event.type == KEYDOWN:
-                        if event.key == K_SPACE or not self.start:
-                            ui_variables.click_sound.play()
-                            self.start = True
-                
-                self.screen.fill(ui_variables.white)
-                pygame.draw.rect(
-                    self.screen,
-                    ui_variables.grey_1,
-                    Rect(0, 374, 600, 374)
-                )
-        
-                title_T = ui_variables.h1.render("T", 1, ui_variables.red)
-                title_E = ui_variables.h1.render("E", 1, ui_variables.cyan)
-                title_t = ui_variables.h1.render("T", 1, ui_variables.orange)
-                title_R = ui_variables.h1.render("R", 1, ui_variables.pink)
-                title_I = ui_variables.h1.render("I", 1, ui_variables.blue)
-                title_S = ui_variables.h1.render("S", 1, ui_variables.green)
-        
-                title_start = ui_variables.h5.render("Press space to start", 1, ui_variables.white)
-                title_info = ui_variables.h6.render("Copyright (c) 2024 Ali Mahdi All Rights Reserved.", 1, ui_variables.white)
-        
-                leader_1 = ui_variables.h5_i.render('1st ' + self.leaders[0][0] + ' ' + str(self.leaders[0][1]), 1, ui_variables.grey_1)
-                leader_2 = ui_variables.h5_i.render('2nd ' + self.leaders[1][0] + ' ' + str(self.leaders[1][1]), 1, ui_variables.grey_1)
-                leader_3 = ui_variables.h5_i.render('3rd ' + self.leaders[2][0] + ' ' + str(self.leaders[2][1]), 1, ui_variables.grey_1)
-        
-                
-                if self.blink:
-                    self.screen.blit(title_start, (184, 390))
-                    self.blink = False
-                else:
-                    self.blink = True
-        
-                
-                self.screen.blit(title_T, (110, 240))
-                self.screen.blit(title_E, (170, 240))
-                self.screen.blit(title_t, (235, 240))
-                self.screen.blit(title_R, (295, 240))
-                self.screen.blit(title_I, (375, 240))
-                self.screen.blit(title_S, (430, 240))
-                
-                self.screen.blit(title_info, (110, 700))
-        
-                self.screen.blit(leader_1, (20, 20))
-                self.screen.blit(leader_2, (20, 46))
-                self.screen.blit(leader_3, (20, 72))
-        
-                if not self.start:
-                    pygame.display.update()
-                    self.clock.tick(3)
-        
         pygame.quit()
+        sys.exit()
+
+if __name__ == "__main__":
+    game = Tetris()
+    game.run()
+
