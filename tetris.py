@@ -70,6 +70,29 @@ class Tetris:
         self.last_fall_time = pygame.time.get_ticks()
         self.last_move_time = pygame.time.get_ticks()
         self.move_delay = 100  # Delay for continuous movement
+        
+    def reset(self):
+        # Game variables
+        self.board = [[0] * self.GRID_WIDTH for _ in range(self.GRID_HEIGHT)]
+        self.game_over = False
+        self.clock = pygame.time.Clock()
+
+        self.SCORE = 0
+        self.LEVEL = 1
+        self.GOAL = 5 * self.LEVEL
+
+        self.current_tetromino = self.random_tetromino()
+        self.tetromino_dx = self.GRID_WIDTH // 2 - len(self.current_tetromino[0]) // 2
+        self.tetromino_dy = 0
+
+        self.next_tetromino = self.random_tetromino()
+        self.hold_tetromino = None  # Variable to store the held tetromino
+        self.can_hold = True  # Flag to prevent multiple holds in one turn
+        self.fall_time = 500
+        self.last_fall_time = pygame.time.get_ticks()
+        self.last_move_time = pygame.time.get_ticks()
+        self.move_delay = 100  # Delay for continuous movement
+        
 
     def random_tetromino(self):
         return random.choice(self.TETROMINOS)
@@ -90,6 +113,10 @@ class Tetris:
         
         if not self.check_collision(mino, self.tetromino_dx, self.tetromino_dy):
             self.current_tetromino = mino
+            
+    def insta_drop(self):
+        while not self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy + 1):
+            self.tetromino_dy += 1
 
 
     # def draw_ghost_piece(self):
@@ -285,8 +312,10 @@ class Tetris:
                     # if not self.check_collision(rotated, self.tetromino_dx, self.tetromino_dy):
                     #     self.current_tetromino = rotated
                 elif event.key == pygame.K_SPACE:
-                    while not self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy + 1):
-                        self.tetromino_dy += 1
+                    # while not self.check_collision(self.current_tetromino, self.tetromino_dx, self.tetromino_dy + 1):
+                    #     self.tetromino_dy += 1
+                    self.insta_drop()
+                    
                 elif event.key == pygame.K_h:  # Hold tetromino
                     if self.can_hold:
                         if self.hold_tetromino is None:
@@ -307,6 +336,9 @@ class Tetris:
             self.draw_grid()
             pygame.display.update()
             self.clock.tick(30)
+            
+            if self.game_over:
+                self.reset()
 
         pygame.quit()
         sys.exit()
