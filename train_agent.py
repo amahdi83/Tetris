@@ -8,7 +8,6 @@ import os
 
 
 
-
 class ExperienceBuffer:
     """Replay memory to store experiences"""
     def __init__(self, buffer_size=20000):
@@ -19,7 +18,6 @@ class ExperienceBuffer:
 
     def sample(self, size):
         return random.sample(self.buffer, min(len(self.buffer), size))
-    
     
     
 class DeepQNetwork(nn.Module):
@@ -124,7 +122,6 @@ class QNetwork(nn.Module):
             self.learn()
 
         return [steps, rewards, scores]
-
 
 
 
