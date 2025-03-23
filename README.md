@@ -1,46 +1,91 @@
-# Tetris Game
+# 🧩🎮 Tetris Game with Deep Q-Learning 🧠
 
-Welcome to the classic Tetris game, reimagined and implemented in Python! 🎮
 
-![Tetris Demo](tetris_demo.gif)
+![Trained Snake Example](tetris.gif)
 
-## Overview
 
-Tetris is a timeless puzzle game loved by millions around the world. This project brings the joy of Tetris to your fingertips with a simple yet addictive gameplay experience.
-
-## Features
-
-- **Classic Gameplay**: Enjoy the familiar Tetris gameplay mechanics, including falling blocks, line clearing, and increasing difficulty levels.
-- **User-friendly Controls**: Easy-to-use controls make it simple for players of all ages to dive right into the action.
-- **High Scores**: Compete with friends and family to achieve the highest score and claim the title of Tetris master.
-- **Customizable Settings**: Adjust game settings such as speed, difficulty, and controls to tailor the experience to your liking.
-- **Sleek Interface**: A clean and intuitive user interface ensures a seamless gaming experience.
-
-## Getting Started
-
-To start playing Tetris:
-
-1. Clone this repository to your local machine.
-2. Install Python if you haven't already.
-3. Navigate to the project directory.
-4. Run `python tetris.py` to launch the game.
-
-## Contributions
-
-Contributions are welcome! Whether you're a seasoned developer or just getting started, there are many ways to contribute:
-
-- Report bugs or suggest new features by opening an issue.
-- Fork the repository and submit a pull request with your enhancements.
-- Spread the word by starring the repository and sharing it with others.
-
-## Acknowledgements
-
-This project wouldn't have been possible without the amazing work of the Tetris community and open-source contributors. Special thanks to [Name of a library or framework you used] for [brief description of its role].
-
-## License
-
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for details.
+Welcome to the **Tetris Game AI Project**! This is a fresh take on the classic Tetris game — built with Pygame and powered by an AI trained using **Deep Q-Learning (DQN)**. The cool part? The AI learns how to play entirely through trial and error... and it's actually really fun to watch it figure things out! 😄
 
 ---
 
-Get ready to experience the thrill of Tetris like never before! Start playing now and see how high you can stack those blocks! 🚀
+## 🎮 Game Overview
+The Tetris game is rendered with a grid-style UI using `pygame`, complete with score tracking and levels. The AI learns to play by observing the game state and taking actions (drop position, and rotation).
+
+The game environment provides feedback (rewards) based on survival, collisions, and clearing lines.
+
+---
+
+## 📂 Modes
+Choose from one of three gameplay modes in `train_tetris.py`:
+
+### 1. `"play"` 👾 Manual Mode
+Play the game yourself using the arrow keys!
+```python
+mode = "play"
+```
+
+### 2. `"train"` 🤖 AI Training Mode
+Train the AI agent using Deep Q-Learning.
+```python
+mode = "train"
+```
+
+### 3. `"test"` 🧪 Watch the Trained Agent
+Watch the AI agent play the game after training.
+```python
+mode = "test"
+```
+
+After choosing the mode, run the following line:
+```python
+python train_tetris.py
+```
+---
+
+## 🛠️ How To
+### ✅ Requirements
+Make sure you have Python 3.7+ and install the required dependencies:
+```python
+pip install pygame torch numpy
+```
+
+---
+
+## 🎓 AI Agent Overview
+The agent uses a DQN with the following input features:
+- Rows cleared
+- Bumpiness
+- Holes
+- Landing height
+- Row transitions
+- Column transitions
+- Cumulative wells
+- Eroded piece cells
+- Aggregate height
+
+It gets rewarded for:
+- ✅ Number of cleared lines
+- ❌ Gameover penalty
+
+The agent uses experience replay and epsilon-greedy exploration to learn effective strategies from past episodes.
+
+---
+
+## 💾 Saving & Loading
+The agent model is saved to weight.pth after training.
+You can load it back in test mode to watch it play.
+
+---
+
+## 🧠 Bonus: Train Smarter
+Modify training parameters in DQNAgent like:
+- number of episodes
+- epsilon_decay
+- batch_size
+- gamma (discount rate)
+- DQN hidden layers
+
+---
+
+## 📬 Contact
+Made with ❤️ by Ali Mahdi. Feel free to reach out with questions, suggestions, or cool ideas!
